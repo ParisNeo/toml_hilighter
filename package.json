@@ -1,0 +1,59 @@
+{
+  "name": "toml-hilighter",
+  "displayName": "TOML Syntax Highlighting",
+  "description": "Provides comprehensive syntax highlighting for TOML files.",
+  "version": "0.1.0",
+  "publisher": "ParisNeo",
+  "engines": {
+    "vscode": "^1.60.0"
+  },
+  "icon": "images/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ParisNeo/toml_hilighter.git"
+  },
+  "main": "./extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "toml",
+        "aliases": ["TOML", "toml"],
+        "extensions": [".toml"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "toml",
+        "scopeName": "source.toml",
+        "path": "./syntaxes/toml.tmLanguage.json"
+      }
+    ],
+    "configurationDefaults": {
+      "[toml]": {
+        "editor.tokenColorCustomizations": {
+          "textMateRules": [
+            {
+              "name": "TOML Sections (Override)",
+              "scope": [
+                "entity.name.section.table.toml",
+                "entity.name.section.array.table.toml",
+                "punctuation.definition.table.begin.toml",
+                "punctuation.definition.table.end.toml",
+                "punctuation.definition.table.array.begin.toml",
+                "punctuation.definition.table.array.end.toml",
+                "entity.name.section.key.quoted.toml"
+              ],
+              "settings": {
+                "foreground": "#9370DB"
+              }
+            }
+          ]
+        }
+      }
+    }
+  },
+  "activationEvents": [
+    "onLanguage:toml"
+  ]
+}

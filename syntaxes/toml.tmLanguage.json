@@ -1,0 +1,119 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "TOML",
+	"scopeName": "source.toml",
+	"patterns": [
+	  {
+		"include": "#comment"
+	  },
+	  {
+		"name": "entity.name.section.table.toml",
+		"begin": "^\\s*(\\[)(?!\\[)",
+		"end": "(\\])",
+		"beginCaptures": {
+		  "1": { "name": "punctuation.definition.table.begin.toml" }
+		},
+		"endCaptures": {
+		  "1": { "name": "punctuation.definition.table.end.toml" }
+		},
+		"patterns": [
+		  { "include": "#comment" },
+		  { "include": "#keys-in-section" }
+		]
+	  },
+	  {
+		"name": "entity.name.section.array.table.toml",
+		"begin": "^\\s*(\\[\\[)",
+		"end": "(\\]\\])",
+		"beginCaptures": {
+		  "1": { "name": "punctuation.definition.table.array.begin.toml" }
+		},
+		"endCaptures": {
+		  "1": { "name": "punctuation.definition.table.array.end.toml" }
+		},
+		"patterns": [
+		  { "include": "#comment" },
+		  { "include": "#keys-in-section" }
+		]
+	  },
+	  {
+		"match": "\\s*(=)\\s*",
+		"captures": {
+		  "1": { "name": "keyword.operator.assignment.toml" }
+		}
+	  },
+	  {
+		 "include": "#strings"
+	  },
+	  {
+		  "match": "^\\s*([A-Za-z0-9_-]+)\\s*(?==)",
+		  "captures": {
+			  "1": { "name": "variable.other.key.toml" }
+		  }
+	  }
+	],
+	"repository": {
+	  "comment": {
+		"begin": "(#)",
+		"beginCaptures": {
+		  "1": { "name": "punctuation.definition.comment.toml" }
+		},
+		"end": "\\n",
+		"name": "comment.line.number-sign.toml"
+	  },
+	  "strings": {
+		"patterns": [
+		  {
+			"name": "string.quoted.double.toml",
+			"begin": "\"",
+			"end": "\"",
+			"patterns": [
+			  { "include": "#string-escapes" }
+			]
+		  },
+		  {
+			"name": "string.quoted.single.toml",
+			"begin": "'",
+			"end": "'"
+		  },
+		  {
+			  "name": "string.quoted.double.multiline.toml",
+			  "begin": "\"\"\"",
+			  "end": "\"\"\"",
+			  "patterns": [
+				  { "match": "\\\\\"\"\"", "name": "constant.character.escape.toml"},
+				  { "include": "#string-escapes" }
+			  ]
+		  },
+		  {
+			  "name": "string.quoted.single.multiline.toml",
+			  "begin": "'''",
+			  "end": "'''"
+		  }
+		]
+	  },
+	  "string-escapes": {
+		  "match": "\\\\(?:[btnfr\"\\\\]|u[0-9A-Fa-f]{4}|U[0-9A-Fa-f]{8})",
+		  "name": "constant.character.escape.toml"
+	  },
+	  "keys-in-section": {
+		  "patterns": [
+			  {
+				  "name": "entity.name.section.key.quoted.toml",
+				  "begin": "\"",
+				  "end": "\"",
+				  "patterns": [ { "include": "#string-escapes" } ]
+			  },
+			  {
+				  "name": "entity.name.section.key.quoted.toml",
+				  "begin": "'",
+				  "end": "'"
+			  },
+			  {
+				  "match": "\\.",
+				  "name": "punctuation.separator.dot.toml"
+			  }
+		 ]
+	  }
+	}
+  }
