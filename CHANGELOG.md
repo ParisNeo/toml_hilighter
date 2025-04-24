@@ -4,6 +4,21 @@ All notable changes to the "toml-hilighter" extension will be documented in this
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [0.2.0] - 2025-04-23
+
+### Added
+
+-   **Real-time TOML syntax validation:** Uses `@ltd/j-toml` parser to detect and report TOML v1.0.0 syntax errors inline and in the Problems panel.
+
+### Changed
+
+-   Updated extension display name and description to include "Validation".
+-   Increased minimum VS Code version slightly if necessary (check `@ltd/j-toml` requirements, but likely okay with `^1.60.0`). *(Self-correction: Keep version unless proven necessary)*
+
+### Fixed
+
+-   Accurate reporting of error locations (line and approximate column) for validation messages by parsing parser output.
+
 ## [0.1.0] - 2025-04-23
 
 ### Added

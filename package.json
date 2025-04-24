@@ -1,8 +1,8 @@
 {
   "name": "toml-hilighter",
-  "displayName": "TOML Syntax Highlighting",
-  "description": "Provides comprehensive syntax highlighting for TOML files.",
-  "version": "0.1.0",
+  "displayName": "TOML Syntax Highlighting & Validation",
+  "description": "Comprehensive syntax highlighting and validation for TOML files.",
+  "version": "0.2.0",
   "publisher": "ParisNeo",
   "engines": {
     "vscode": "^1.60.0"
@@ -12,13 +12,32 @@
     "type": "git",
     "url": "https://github.com/ParisNeo/toml_hilighter.git"
   },
+  "categories": [
+    "Programming Languages",
+    "Linters",
+    "Snippets"
+  ],
+  "keywords": [
+    "toml",
+    "syntax",
+    "highlighting",
+    "validation",
+    "linter",
+    "language",
+    "configuration"
+  ],
   "main": "./extension.js",
   "contributes": {
     "languages": [
       {
         "id": "toml",
-        "aliases": ["TOML", "toml"],
-        "extensions": [".toml"],
+        "aliases": [
+          "TOML",
+          "toml"
+        ],
+        "extensions": [
+          ".toml"
+        ],
         "configuration": "./language-configuration.json"
       }
     ],
@@ -55,5 +74,8 @@
   },
   "activationEvents": [
     "onLanguage:toml"
-  ]
+  ],
+  "dependencies": {
+    "@ltd/j-toml": "^1.38.0"
+  }
 }
