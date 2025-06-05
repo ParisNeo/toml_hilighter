@@ -1,8 +1,8 @@
 {
   "name": "toml-hilighter",
-  "displayName": "TOML Syntax Highlighting, Validation & Schema Support",
-  "description": "Comprehensive syntax highlighting, TOML v1.0.0 syntax validation, and JSON Schema based validation for TOML files.",
-  "version": "0.3.2",
+  "displayName": "TOML Syntax Highlighting, Validation, Schema & Autocompletion",
+  "description": "Comprehensive syntax highlighting, TOML v1.0.0 syntax validation, JSON Schema based validation, and schema-aware autocompletion for TOML files.",
+  "version": "0.4.0",
   "publisher": "ParisNeo",
   "engines": {
     "vscode": "^1.60.0"
@@ -15,7 +15,8 @@
   "categories": [
     "Programming Languages",
     "Linters",
-    "Snippets"
+    "Snippets",
+    "IntelliSense"
   ],
   "keywords": [
     "toml",
@@ -26,7 +27,9 @@
     "language",
     "configuration",
     "json-schema",
-    "schema"
+    "schema",
+    "autocomplete",
+    "intellisense"
   ],
   "main": "./extension.js",
   "contributes": {
@@ -74,12 +77,17 @@
       }
     },
     "configuration": {
-      "title": "TOML Highlighting & Validation",
+      "title": "TOML Highlighting, Validation & Schema Support",
       "properties": {
         "toml.schema.enableValidation": {
           "type": "boolean",
           "default": true,
           "description": "Enable or disable JSON Schema validation for TOML files."
+        },
+        "toml.schema.enableCompletions": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable or disable JSON Schema-based autocompletion for TOML files."
         },
         "toml.schema.associations": {
           "type": "object",
@@ -98,11 +106,11 @@
       }
     },
     "commands": [
-        {
-            "command": "toml.clearSchemaCache",
-            "title": "TOML: Clear Schema Cache",
-            "category": "TOML"
-        }
+      {
+        "command": "toml.clearSchemaCache",
+        "title": "TOML: Clear Schema Cache",
+        "category": "TOML"
+      }
     ]
   },
   "activationEvents": [

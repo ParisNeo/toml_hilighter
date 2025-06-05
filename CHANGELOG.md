@@ -4,6 +4,24 @@ All notable changes to the "toml-hilighter" extension will be documented in this
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [0.4.0] - 2025-06-07
+
+### Added
+
+-   **JSON Schema-based Autocompletion (MVP):**
+    -   Provides autocompletion for TOML keys based on the `properties` defined in the associated JSON schema.
+    -   Suggests `enum` values from the schema when typing a value for a key with an enum definition.
+    -   Suggests `true` and `false` for keys with a boolean type in the schema.
+    -   Completions include `description` (as documentation) and `type` (as detail) from the schema.
+    -   Uses existing schema loading and caching mechanisms.
+    -   Context analysis for determining current TOML path is basic (primarily based on preceding `[table]` definitions and current line key prefixes).
+    -   New configuration setting: `toml.schema.enableCompletions` (boolean, default: `true`) to toggle this feature.
+-   Introduced a separate cache for raw (uncompiled) JSON schema objects to support traversal for completion suggestions.
+
+### Changed
+-   Renamed `clearSchemaCache` to `clearSchemaCaches` to reflect it clears both raw and compiled schema caches.
+-   Refined schema loading to cache both raw and compiled schema objects.
+
 ## [0.3.2] - 2025-06-06
 
 ### Fixed
@@ -12,9 +30,10 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Schema validation: Set Ajv to `strict: true` for more robust schema compliance checks.
 - Schema validation: Enhanced error message for missing required properties to be more specific.
 - Schema validation: Refined glob pattern matching for `toml.schema.associations`.
+- Schema validation: Resolved `TypeError: Do not know how to serialize a BigInt` by parsing TOML integers as standard numbers when preparing data for Ajv and `JSON.stringify` logging.
 
-## [0.3.1] - 2025-06-05 (Internal - Mistakenly referred to in previous response, corrected by 0.3.2)
-- Add `ajv-formats` dependency to handle formats like "email" in JSON Schemas. (This was the intended fix for the user's report)
+## [0.3.1] - 2025-06-05 (Internal - Corrected by 0.3.2)
+- Add `ajv-formats` dependency to handle formats like "email" in JSON Schemas.
 
 ## [0.3.0] - 2025-06-05
 
