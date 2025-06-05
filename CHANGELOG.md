@@ -4,6 +4,45 @@ All notable changes to the "toml-hilighter" extension will be documented in this
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [0.3.2] - 2025-06-06
+
+### Fixed
+- Schema validation: Add `ajv-formats` to correctly handle standard JSON schema formats like "email".
+- Schema validation: Improved logging for schema loading and validation errors.
+- Schema validation: Set Ajv to `strict: true` for more robust schema compliance checks.
+- Schema validation: Enhanced error message for missing required properties to be more specific.
+- Schema validation: Refined glob pattern matching for `toml.schema.associations`.
+
+## [0.3.1] - 2025-06-05 (Internal - Mistakenly referred to in previous response, corrected by 0.3.2)
+- Add `ajv-formats` dependency to handle formats like "email" in JSON Schemas. (This was the intended fix for the user's report)
+
+## [0.3.0] - 2025-06-05
+
+### Added
+
+-   **JSON Schema Validation:**
+    -   Integrates `ajv` for validating TOML documents against JSON Schemas.
+    -   Supports schema association via:
+        -   `# $schema: <uri>` comment in TOML files (takes precedence).
+        -   `toml.schema.associations` VS Code setting for glob pattern to schema URI mapping.
+    -   Loads schemas from local file paths (relative and absolute) and HTTP/HTTPS URLs.
+    -   Implements an in-memory cache for loaded and compiled schemas to improve performance.
+    -   Reports schema validation errors as diagnostics in the "Problems" panel. (MVP: errors point to schema definition line or first line of document).
+    -   New configuration settings:
+        -   `toml.schema.enableValidation`: Toggle schema validation (default: `true`).
+        -   `toml.schema.associations`: Define custom schema associations.
+        -   `toml.schema.cache.maxSize`: Configure schema cache size (default: `20`).
+    -   Adds a "TOML Schemas" output channel for logging schema loading and validation activity.
+
+### Changed
+
+-   Updated extension display name and description to include "Schema Support".
+-   Dependencies: Added `ajv` for JSON schema validation.
+
+### Fixed
+
+-   More robust handling of TOML parsing errors when error location is out of document bounds.
+
 ## [0.2.0] - 2025-04-23
 
 ### Added
@@ -13,7 +52,6 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ### Changed
 
 -   Updated extension display name and description to include "Validation".
--   Increased minimum VS Code version slightly if necessary (check `@ltd/j-toml` requirements, but likely okay with `^1.60.0`). *(Self-correction: Keep version unless proven necessary)*
 
 ### Fixed
 

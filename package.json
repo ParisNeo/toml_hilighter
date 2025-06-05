@@ -1,8 +1,8 @@
 {
   "name": "toml-hilighter",
-  "displayName": "TOML Syntax Highlighting & Validation",
-  "description": "Comprehensive syntax highlighting and validation for TOML files.",
-  "version": "0.2.0",
+  "displayName": "TOML Syntax Highlighting, Validation & Schema Support",
+  "description": "Comprehensive syntax highlighting, TOML v1.0.0 syntax validation, and JSON Schema based validation for TOML files.",
+  "version": "0.3.2",
   "publisher": "ParisNeo",
   "engines": {
     "vscode": "^1.60.0"
@@ -24,7 +24,9 @@
     "validation",
     "linter",
     "language",
-    "configuration"
+    "configuration",
+    "json-schema",
+    "schema"
   ],
   "main": "./extension.js",
   "contributes": {
@@ -70,12 +72,42 @@
           ]
         }
       }
-    }
+    },
+    "configuration": {
+      "title": "TOML Highlighting & Validation",
+      "properties": {
+        "toml.schema.enableValidation": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable or disable JSON Schema validation for TOML files."
+        },
+        "toml.schema.associations": {
+          "type": "object",
+          "default": {},
+          "description": "Associate TOML files matching glob patterns with JSON Schemas. The key is a glob pattern (e.g., '**/my-project/*.toml') and the value is the schema URI (local path or HTTPS URL). Example: { '**/mypackage.toml': './schemas/mypackage.schema.json' }",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "toml.schema.cache.maxSize": {
+          "type": "integer",
+          "default": 20,
+          "minimum": 0,
+          "description": "Maximum number of compiled schemas to keep in the cache. Set to 0 to disable caching (not recommended for remote schemas)."
+        }
+      }
+    },
+    "commands": [
+        {
+            "command": "toml.clearSchemaCache",
+            "title": "TOML: Clear Schema Cache",
+            "category": "TOML"
+        }
+    ]
   },
-  "activationEvents": [
-    "onLanguage:toml"
-  ],
   "dependencies": {
-    "@ltd/j-toml": "^1.38.0"
+    "@ltd/j-toml": "^1.38.0",
+    "ajv": "^8.12.0",
+    "ajv-formats": "^3.0.1"
   }
 }
