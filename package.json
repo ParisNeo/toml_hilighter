@@ -2,7 +2,7 @@
   "name": "toml-hilighter",
   "displayName": "TOML Syntax Highlighting, Validation, Schema & Autocompletion",
   "description": "Comprehensive syntax highlighting, TOML v1.0.0 syntax validation, JSON Schema based validation, and schema-aware autocompletion for TOML files.",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "publisher": "ParisNeo",
   "engines": {
     "vscode": "^1.60.0"
@@ -15,8 +15,7 @@
   "categories": [
     "Programming Languages",
     "Linters",
-    "Snippets",
-    "IntelliSense"
+    "Snippets"
   ],
   "keywords": [
     "toml",
