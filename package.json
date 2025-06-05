@@ -105,6 +105,9 @@
         }
     ]
   },
+  "activationEvents": [
+    "onLanguage:toml"
+  ],
   "dependencies": {
     "@ltd/j-toml": "^1.38.0",
     "ajv": "^8.12.0",
