@@ -4,7 +4,7 @@
 [![Visual Studio Marketplace Installs](https://img.shields.io/visual-studio-marketplace/i/ParisNeo.toml-hilighter?style=flat-square)](https://marketplace.visualstudio.com/items?itemName=ParisNeo.toml-hilighter)
 [![Visual Studio Marketplace Rating](https://img.shields.io/visual-studio-marketplace/r/ParisNeo.toml-hilighter?style=flat-square)](https://marketplace.visualstudio.com/items?itemName=ParisNeo.toml-hilighter)
 
-Comprehensive syntax highlighting, **TOML v1.0.0 syntax validation**, **JSON Schema based validation**, and **schema-aware autocompletion** for TOML (Tom's Obvious, Minimal Language) files in Visual Studio Code.
+Comprehensive syntax highlighting, **TOML v0.1.0 syntax validation**, **JSON Schema based validation**, and **schema-aware autocompletion** for TOML (Tom's Obvious, Minimal Language) files in Visual Studio Code.
 
 ![TOML Highlighting](images/demo.gif)
 ![TOML Validation Demo](images/demo2.gif)
