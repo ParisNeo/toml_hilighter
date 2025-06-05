@@ -7,7 +7,7 @@ const Ajv = require('ajv');
 const addFormats = require('ajv-formats');
 const path = require('path');
 const fs = require('fs').promises;
-const { URL } = require('url');
+// const { URL } = require('url'); // URL is not explicitly used, can be removed if not needed elsewhere
 
 /** @type {vscode.DiagnosticCollection} */
 let diagnosticCollection;
@@ -19,9 +19,11 @@ const tomlErrorRegex = /at line (\d+)(?:, column (\d+))?/;
 // --- JSON Schema Constants and Variables ---
 const SCHEMA_COMMENT_REGEX = /#\s*\$schema:\s*(\S+)/;
 let ajv;
-const schemaCache = new Map();
+const schemaCache = new Map(); // Stores compiled schema validation functions
+const rawSchemaCache = new Map(); // Stores raw (uncompiled) schema JSON objects for traversal
 let maxSchemaCacheSize = 20;
 let schemaValidationEnabled = true;
+let schemaCompletionEnabled = true; // New setting for completions
 
 /**
  * Logs a message to the TOML Schemas output channel.
@@ -29,55 +31,60 @@ let schemaValidationEnabled = true;
  * @param {string} message
  */
 function logToChannel(message) {
-    console.log(`[TOML LOG]: ${message}`); // Also log to dev console
+    console.log(`[TOML LOG]: ${message}`);
     if (outputChannel) {
         outputChannel.appendLine(message);
     } else {
-        console.warn("[TOML LOG PRE-CHANNEL]: " + message); // Log if channel not yet ready
+        console.warn("[TOML LOG PRE-CHANNEL]: " + message);
     }
 }
 
 /**
- * Manages the schema cache, adding a new schema and evicting the oldest if the cache exceeds maxSize.
+ * Manages schema caches, adding new schemas and evicting the oldest if the cache exceeds maxSize.
  * @param {string} schemaUri The URI of the schema.
+ * @param {any} rawSchema The raw JSON schema object.
  * @param {import('ajv').ValidateFunction} compiledSchema The compiled schema function.
  */
-function cacheSchema(schemaUri, compiledSchema) {
-    if (maxSchemaCacheSize === 0) return; 
+function cacheSchemas(schemaUri, rawSchema, compiledSchema) {
+    if (maxSchemaCacheSize === 0) return;
 
     if (schemaCache.size >= maxSchemaCacheSize && !schemaCache.has(schemaUri)) {
         const oldestKey = schemaCache.keys().next().value;
         if (oldestKey) {
             schemaCache.delete(oldestKey);
+            rawSchemaCache.delete(oldestKey);
             logToChannel(`Cache full. Evicted schema: ${oldestKey}`);
         }
     }
+    rawSchemaCache.set(schemaUri, rawSchema);
     schemaCache.set(schemaUri, compiledSchema);
-    logToChannel(`Cached schema: ${schemaUri}. Cache size: ${schemaCache.size}`);
+    logToChannel(`Cached schema (raw & compiled): ${schemaUri}. Cache size: ${schemaCache.size}`);
 }
 
 /**
- * Clears the schema cache.
+ * Clears schema caches.
  */
-function clearSchemaCache() {
+function clearSchemaCaches() {
     schemaCache.clear();
-    logToChannel('Schema cache cleared.');
+    rawSchemaCache.clear();
+    logToChannel('Schema caches (raw & compiled) cleared.');
 }
 
 /**
  * Loads and compiles a JSON schema from a URI (file or HTTP/S).
+ * Stores both raw and compiled schema in respective caches.
  * @param {string} schemaUri The URI of the schema.
  * @param {vscode.Uri} documentUri The URI of the TOML document, for resolving relative paths.
- * @returns {Promise<import('ajv').ValidateFunction | null>} A promise that resolves to the compiled schema function or null.
+ * @returns {Promise<{raw: any, compiled: import('ajv').ValidateFunction} | null>}
  */
-async function loadAndCompileSchema(schemaUri, documentUri) {
-    logToChannel(`loadAndCompileSchema called for schema URI: "${schemaUri}", document: "${documentUri ? documentUri.fsPath : 'N/A'}"`);
-    if (maxSchemaCacheSize > 0 && schemaCache.has(schemaUri)) {
+async function loadAndCacheSchemaObjects(schemaUri, documentUri) {
+    logToChannel(`loadAndCacheSchemaObjects called for schema URI: "${schemaUri}", document: "${documentUri ? documentUri.fsPath : 'N/A'}"`);
+    if (maxSchemaCacheSize > 0 && schemaCache.has(schemaUri) && rawSchemaCache.has(schemaUri)) {
         logToChannel(`Schema cache hit for: ${schemaUri}`);
-        return schemaCache.get(schemaUri);
+        return { raw: rawSchemaCache.get(schemaUri), compiled: schemaCache.get(schemaUri) };
     }
 
-    logToChannel(`Loading schema: ${schemaUri}`);
+    logToChannel(`Loading schema for caching (raw & compiled): ${schemaUri}`);
     let schemaContent;
     let absoluteSchemaUri = schemaUri;
 
@@ -112,30 +119,59 @@ async function loadAndCompileSchema(schemaUri, documentUri) {
             logToChannel(`Local schema content read for: ${resolvedUri.fsPath}`);
         }
 
-        const schemaJson = JSON.parse(schemaContent);
+        const rawSchemaJson = JSON.parse(schemaContent);
         logToChannel(`Schema content parsed to JSON for: ${schemaUri}`);
         
-        const compiledSchema = ajv.compile(schemaJson);
+        const compiledSchemaFn = ajv.compile(rawSchemaJson);
         logToChannel(`Schema compiled by Ajv for: ${schemaUri}`);
         
         if (maxSchemaCacheSize > 0) {
-            cacheSchema(schemaUri, compiledSchema);
+            cacheSchemas(schemaUri, rawSchemaJson, compiledSchemaFn);
         }
-        return compiledSchema;
+        return { raw: rawSchemaJson, compiled: compiledSchemaFn };
     } catch (error) {
         logToChannel(`Error loading/compiling schema ${schemaUri} (resolved to ${absoluteSchemaUri}): ${error.message}. Ajv errors (if any): ${error.errors ? JSON.stringify(error.errors) : 'N/A'}`);
-        vscode.window.showErrorMessage(`TOML: Failed to load/compile schema "${schemaUri}": ${error.message}`);
+        // Don't show window error message here, let callers decide or rely on diagnostics
         return null;
     }
 }
+
+/**
+ * Gets the raw schema object for completion suggestions.
+ * @param {string} schemaUri The URI of the schema.
+ * @param {vscode.Uri} documentUri The URI of the TOML document.
+ * @returns {Promise<any | null>}
+ */
+async function getRawSchemaForCompletions(schemaUri, documentUri) {
+    if (rawSchemaCache.has(schemaUri)) {
+        return rawSchemaCache.get(schemaUri);
+    }
+    const schemas = await loadAndCacheSchemaObjects(schemaUri, documentUri);
+    return schemas ? schemas.raw : null;
+}
+
+/**
+ * Gets the compiled schema validation function.
+ * @param {string} schemaUri The URI of the schema.
+ * @param {vscode.Uri} documentUri The URI of the TOML document.
+ * @returns {Promise<import('ajv').ValidateFunction | null>}
+ */
+async function getCompiledSchemaForValidation(schemaUri, documentUri) {
+    if (schemaCache.has(schemaUri)) {
+        return schemaCache.get(schemaUri);
+    }
+    const schemas = await loadAndCacheSchemaObjects(schemaUri, documentUri);
+    return schemas ? schemas.compiled : null;
+}
+
 
 /**
  * Finds the schema URI for a given TOML document.
  * @param {vscode.TextDocument} document The document to find the schema for.
  * @returns {Promise<string | null>} The schema URI or null if not found.
  */
-async function getSchemaForDocument(document) {
-    logToChannel(`getSchemaForDocument for: ${document.uri.fsPath}`);
+async function getSchemaUriForDocument(document) { // Renamed from getSchemaForDocument to avoid confusion
+    logToChannel(`getSchemaUriForDocument for: ${document.uri.fsPath}`);
     const lineCountToCheck = Math.min(document.lineCount, 10);
     for (let i = 0; i < lineCountToCheck; i++) {
         const line = document.lineAt(i).text;
@@ -190,13 +226,14 @@ async function validateTomlDocument(document) {
     const text = document.getText();
     let parsedTomlData = null;
 
-    // --- 1. Syntax Validation ---
     logToChannel(`Attempting TOML syntax validation for: "${document.uri.fsPath}"`);
     try {
-        // Parse with useBigInt: false to ensure numbers are used, compatible with JSON.stringify and Ajv.
-        // The third argument to TOML.parse is multilineStringJoiner, fourth is useBigInt.
         parsedTomlData = TOML.parse(text, 1.0, '\n', false); 
-        logToChannel(`TOML syntax validation successful for: "${document.uri.fsPath}". Parsed data: ${JSON.stringify(parsedTomlData)}`);
+        logToChannel(`TOML syntax validation successful for: "${document.uri.fsPath}".`);
+        // Avoid logging full parsedTomlData by default to prevent excessively large logs for big files
+        // if (parsedTomlData && Object.keys(parsedTomlData).length < 10) { // Log small objects
+        //     logToChannel(`Parsed data: ${JSON.stringify(parsedTomlData)}`);
+        // }
     } catch (error) {
         logToChannel(`TOML syntax validation failed for: "${document.uri.fsPath}". Error: ${error.message}`);
         let range;
@@ -230,19 +267,17 @@ async function validateTomlDocument(document) {
         diagnostics.push(diagnostic);
     }
 
-    // --- 2. Schema Validation (only if syntax is valid and enabled) ---
     if (parsedTomlData && schemaValidationEnabled) {
         logToChannel(`Attempting schema validation for: "${document.uri.fsPath}" (Schema validation enabled: ${schemaValidationEnabled})`);
-        const schemaUri = await getSchemaForDocument(document);
+        const schemaUri = await getSchemaUriForDocument(document);
         if (schemaUri) {
             logToChannel(`Schema URI found for "${document.uri.fsPath}": ${schemaUri}`);
-            const validateSchemaFn = await loadAndCompileSchema(schemaUri, document.uri);
+            const validateSchemaFn = await getCompiledSchemaForValidation(schemaUri, document.uri);
             if (validateSchemaFn) {
-                logToChannel(`Compiled schema function obtained. Validating data: ${JSON.stringify(parsedTomlData)}`); // Data should now be JSON stringifiable
+                logToChannel(`Compiled schema function obtained. Validating data...`); // Removed data logging for brevity
                 const isValid = validateSchemaFn(parsedTomlData);
                 if (!isValid && validateSchemaFn.errors) {
                     logToChannel(`Schema validation failed for "${document.uri.fsPath}". Errors: ${JSON.stringify(validateSchemaFn.errors, null, 2)}`);
-                    
                     let schemaErrorLine = 0;
                     let schemaErrorColStart = 0;
                     let schemaErrorColEnd = 1;
@@ -301,6 +336,7 @@ function loadConfiguration() {
     console.log('[TOML Extension] loadConfiguration called.');
     const config = vscode.workspace.getConfiguration('toml');
     schemaValidationEnabled = config.get('schema.enableValidation', true);
+    schemaCompletionEnabled = config.get('schema.enableCompletions', true); // Load new setting
     const newCacheSize = config.get('schema.cache.maxSize', 20);
 
     if (newCacheSize !== maxSchemaCacheSize) {
@@ -309,14 +345,170 @@ function loadConfiguration() {
         while(schemaCache.size > maxSchemaCacheSize && maxSchemaCacheSize > 0) {
             const oldestKey = schemaCache.keys().next().value;
             if (oldestKey) {
+                rawSchemaCache.delete(oldestKey); // Also clear from raw cache
                 schemaCache.delete(oldestKey);
                 logToChannel(`Cache eviction due to size change: ${oldestKey}`);
             } else break;
         }
-        if (maxSchemaCacheSize === 0 && schemaCache.size > 0) clearSchemaCache();
+        if (maxSchemaCacheSize === 0 && schemaCache.size > 0) clearSchemaCaches();
     }
-    logToChannel(`Configuration loaded: schemaValidationEnabled=${schemaValidationEnabled}, maxSchemaCacheSize=${maxSchemaCacheSize}`);
+    logToChannel(`Configuration loaded: schemaValidationEnabled=${schemaValidationEnabled}, schemaCompletionEnabled=${schemaCompletionEnabled}, maxSchemaCacheSize=${maxSchemaCacheSize}`);
 }
+
+
+// --- Autocompletion Logic ---
+
+/**
+ * Traverses a schema object based on a path array.
+ * @param {any} schema The schema object.
+ * @param {string[]} pathSegments Array of path segments (keys).
+ * @returns {any | null} The sub-schema or null if path is invalid.
+ */
+function getSchemaNode(schema, pathSegments) {
+    let currentNode = schema;
+    for (const segment of pathSegments) {
+        if (currentNode && currentNode.properties && currentNode.properties[segment]) {
+            currentNode = currentNode.properties[segment];
+            // Follow $ref if present (simple, non-recursive for now)
+            if (currentNode.$ref && schema.$defs && schema.$defs[currentNode.$ref.replace('#/$defs/', '')]) {
+                currentNode = schema.$defs[currentNode.$ref.replace('#/$defs/', '')];
+            }
+        } else if (currentNode && currentNode.type === 'object' && currentNode.patternProperties) {
+            // Simplistic patternProperties handling: take the first one that might match
+            // This would need more robust logic for full support
+            let foundPattern = false;
+            for (const pattern in currentNode.patternProperties) {
+                // A very naive check, real matching is complex
+                // For now, just assume if there's a patternProperty, we try to use its schema
+                 currentNode = currentNode.patternProperties[pattern];
+                 foundPattern = true;
+                 break;
+            }
+            if(!foundPattern) return null;
+
+        } else if (currentNode && currentNode.type === 'array' && currentNode.items) {
+            currentNode = currentNode.items; // For arrays, suggest properties of their items
+             // Follow $ref for array items
+            if (currentNode.$ref && schema.$defs && schema.$defs[currentNode.$ref.replace('#/$defs/', '')]) {
+                currentNode = schema.$defs[currentNode.$ref.replace('#/$defs/', '')];
+            }
+        }
+        else {
+            return null; // Path segment not found
+        }
+    }
+    return currentNode;
+}
+
+
+class TomlCompletionItemProvider {
+    async provideCompletionItems(document, position, token, context) {
+        logToChannel(`TomlCompletionItemProvider.provideCompletionItems for ${document.uri.fsPath} at L${position.line}C${position.character}`);
+        if (!schemaCompletionEnabled) {
+            logToChannel("Schema completions disabled.");
+            return null;
+        }
+
+        const schemaUri = await getSchemaUriForDocument(document);
+        if (!schemaUri) {
+            logToChannel("No schema URI found for document, no schema completions.");
+            return null;
+        }
+
+        const rawSchema = await getRawSchemaForCompletions(schemaUri, document.uri);
+        if (!rawSchema) {
+            logToChannel("Failed to load raw schema, no schema completions.");
+            return null;
+        }
+
+        const lineText = document.lineAt(position.line).text;
+        const textBeforeCursor = lineText.substring(0, position.character);
+
+        const suggestions = [];
+
+        // Determine current TOML path (simplified for MVP)
+        // This needs to be much more robust for real-world TOML
+        let currentPathSegments = [];
+        let currentTable = ""; 
+        for(let i = position.line -1; i>=0; i--){
+            const lText = document.lineAt(i).text.trim();
+            if(lText.startsWith("[")){
+                currentTable = lText.replace(/^\[+/, "").replace(/\]+$/, "").trim();
+                break;
+            }
+        }
+        if(currentTable){
+            currentPathSegments = currentTable.split('.');
+        }
+        
+        const keyMatch = textBeforeCursor.match(/^(\s*)([a-zA-Z0-9_.-]*)$/);
+        const assignmentMatch = textBeforeCursor.match(/^\s*([a-zA-Z0-9_."'-]+)\s*=\s*$/);
+        
+        let activeSchemaNode = getSchemaNode(rawSchema, currentPathSegments);
+        if (!activeSchemaNode) {
+             logToChannel(`No active schema node found for path: ${currentPathSegments.join('.')}`);
+             return null;
+        }
+
+
+        if (assignmentMatch) { // User is typing a value
+            const fullKey = assignmentMatch[1].replace(/^["']|["']$/g, ''); // Remove quotes if any
+            const keyPath = [...currentPathSegments, ...fullKey.split('.')];
+            const valueSchemaNode = getSchemaNode(rawSchema, keyPath);
+
+            if (valueSchemaNode) {
+                logToChannel(`Providing value completions for key: ${keyPath.join('.')} Schema node: ${JSON.stringify(valueSchemaNode)}`);
+                if (valueSchemaNode.enum) {
+                    valueSchemaNode.enum.forEach(enumValue => {
+                        const item = new vscode.CompletionItem(String(enumValue), vscode.CompletionItemKind.EnumMember);
+                        item.detail = "Enum value";
+                        if(typeof enumValue === 'string') item.insertText = `"${enumValue}"`;
+                        suggestions.push(item);
+                    });
+                }
+                if (valueSchemaNode.type === 'boolean') {
+                    suggestions.push(new vscode.CompletionItem('true', vscode.CompletionItemKind.Value));
+                    suggestions.push(new vscode.CompletionItem('false', vscode.CompletionItemKind.Value));
+                }
+            }
+        } else if (keyMatch) { // User is typing a key
+            const keyPrefix = keyMatch[2];
+            let keyPathSoFar = currentPathSegments;
+            const parts = keyPrefix.split('.');
+            let partialKey = "";
+
+            if (parts.length > 1) {
+                keyPathSoFar = [...currentPathSegments, ...parts.slice(0, -1)];
+                partialKey = parts[parts.length - 1];
+            } else {
+                partialKey = keyPrefix;
+            }
+            
+            activeSchemaNode = getSchemaNode(rawSchema, keyPathSoFar);
+             if (!activeSchemaNode || !activeSchemaNode.properties) {
+                logToChannel(`No properties found for schema path: ${keyPathSoFar.join('.')}`);
+                return suggestions.length > 0 ? suggestions : null;
+            }
+
+            logToChannel(`Providing key completions for path: ${keyPathSoFar.join('.')} prefix: "${partialKey}"`);
+
+            for (const key in activeSchemaNode.properties) {
+                if (key.startsWith(partialKey)) {
+                    const propSchema = activeSchemaNode.properties[key];
+                    const item = new vscode.CompletionItem(key, vscode.CompletionItemKind.Property);
+                    item.detail = propSchema.type ? `Type: ${propSchema.type}` : 'Property';
+                    if (propSchema.description) {
+                        item.documentation = new vscode.MarkdownString(propSchema.description);
+                    }
+                    suggestions.push(item);
+                }
+            }
+        }
+        logToChannel(`Returning ${suggestions.length} completion items.`);
+        return suggestions.length > 0 ? suggestions : null;
+    }
+}
+
 
 /**
  * @param {vscode.ExtensionContext} context
@@ -326,7 +518,7 @@ function activate(context) {
     try {
         outputChannel = vscode.window.createOutputChannel("TOML Schemas");
         context.subscriptions.push(outputChannel);
-        logToChannel('TOML extension with schema validation is now active!');
+        logToChannel('TOML extension with schema validation & completion is now active!');
 
         ajv = new Ajv({ allErrors: true, strict: true }); 
         addFormats(ajv);
@@ -345,6 +537,17 @@ function activate(context) {
             }
         });
         logToChannel('Initial validation scan complete.');
+
+        // Register completion provider
+        context.subscriptions.push(
+            vscode.languages.registerCompletionItemProvider(
+                { language: 'toml', scheme: 'file' }, // Apply to TOML files
+                new TomlCompletionItemProvider(),
+                '.' // Trigger completion on '.'
+            )
+        );
+        logToChannel('TomlCompletionItemProvider registered.');
+
 
         context.subscriptions.push(vscode.workspace.onDidOpenTextDocument(doc => {
             logToChannel(`onDidOpenTextDocument: ${doc.uri.fsPath}`);
@@ -381,7 +584,7 @@ function activate(context) {
                 const newAssociations = JSON.stringify(vscode.workspace.getConfiguration('toml').get('schema.associations'));
                 if (e.affectsConfiguration('toml.schema.associations') || oldAssociations !== newAssociations) {
                     logToChannel('Schema associations changed, clearing cache.');
-                    clearSchemaCache();
+                    clearSchemaCaches(); // Use new function for both caches
                 }
                 
                 logToChannel('Re-validating all open TOML documents due to configuration change.');
@@ -393,7 +596,7 @@ function activate(context) {
 
         let disposableClearCache = vscode.commands.registerCommand('toml.clearSchemaCache', () => {
             logToChannel('Command toml.clearSchemaCache executed.');
-            clearSchemaCache();
+            clearSchemaCaches(); // Use new function
             vscode.window.showInformationMessage('TOML schema cache cleared.');
             logToChannel('Re-validating open documents after cache clear command.');
             vscode.workspace.textDocuments.forEach(doc => {
@@ -413,10 +616,10 @@ function deactivate() {
     console.log('[TOML Extension] deactivate function called.');
     if (diagnosticCollection) diagnosticCollection.dispose();
     if (outputChannel) {
-        logToChannel('Deactivating "toml-hilighter" with schema validation.'); 
+        logToChannel('Deactivating "toml-hilighter" with schema validation & completion.'); 
         outputChannel.dispose();
     }
-    clearSchemaCache();
+    clearSchemaCaches(); // Use new function
 }
 
 module.exports = {
