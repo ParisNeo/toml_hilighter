@@ -520,7 +520,7 @@ function activate(context) {
         context.subscriptions.push(outputChannel);
         logToChannel('TOML extension with schema validation & completion is now active!');
 
-        ajv = new Ajv({ allErrors: true, strict: true }); 
+        ajv = new Ajv({ allErrors: true, strict: "log" }); 
         addFormats(ajv);
         logToChannel('Ajv initialized with formats.');
 

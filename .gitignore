@@ -138,3 +138,7 @@ dist
 # vscode files
 *.vsix
 .vscode
+builds/
+
+# lollms coder special folder
+.lollms

@@ -4,6 +4,10 @@ All notable changes to the "toml-hilighter" extension will be documented in this
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [2026-03-08 15:50]
+
+- build: add package script, ignore builds/, bump to v0.4.2, and relax AJV strict mode
+
 ## [0.4.0] - 2025-06-07
 
 ### Added

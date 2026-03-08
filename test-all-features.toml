@@ -1,0 +1,133 @@
+# $schema: ./test-schema.json
+# Test file for TOML extension features
+# This file demonstrates syntax highlighting, validation, and autocompletion
+
+# =============================================================================
+# SECTION 1: Basic Types (Syntax Highlighting & Validation)
+# =============================================================================
+
+name = "TOML Test Project"          # String - required by schema
+version = "1.0.0"                   # String with pattern - required
+enabled = true                      # Boolean
+priority = "high"                   # Enum value: low, medium, high
+count = 42                          # Integer
+
+# =============================================================================
+# SECTION 2: Strings (Syntax Highlighting)
+# =============================================================================
+
+basic_string = "Hello, World!"
+escaped_string = "Line 1\nLine 2\tTabbed"
+literal_string = 'No \n escaping here!'
+multiline_basic = """This spans
+multiple lines and preserves "quotes" inside."""
+multiline_literal = '''Also spans
+lines but \ is literal here too.'''
+
+# =============================================================================
+# SECTION 3: Numbers (Syntax Highlighting)
+# =============================================================================
+
+integer = 42
+hex = 0xDEADBEEF
+octal = 0o755
+binary = 0b101010
+float = 3.14159
+infinite = inf
+not_a_number = nan
+
+# =============================================================================
+# SECTION 4: Dates and Times (Syntax Highlighting)
+# =============================================================================
+
+offset_datetime = 2024-01-15T09:30:00Z
+local_datetime = 2024-01-15T09:30:00
+local_date = 2024-01-15
+local_time = 09:30:00
+
+# =============================================================================
+# SECTION 5: Arrays (Syntax Highlighting & Structure)
+# =============================================================================
+
+integers = [1, 2, 3, 4, 5]
+strings = ["a", "b", "c"]
+nested = [[1, 2], [3, 4]]
+mixed = [[{ name = "nested" }]]
+
+# =============================================================================
+# SECTION 6: Inline Tables (Syntax Highlighting)
+# =============================================================================
+
+point = { x = 1, y = 2, label = "origin" }
+
+# =============================================================================
+# SECTION 7: Standard Tables (Syntax Highlighting & Schema Validation)
+# =============================================================================
+
+[metadata]                          # Table header
+tags = ["test", "demo", "toml"]
+created = "2024-01-15T09:30:00Z"   # Required field per schema
+
+[server]                            # Another table
+host = "localhost"
+port = 8080
+ssl = false
+
+# =============================================================================
+# SECTION 8: Array of Tables (Syntax Highlighting)
+# =============================================================================
+
+[[products]]
+name = "Widget"
+sku = "WDG-001"
+price = 19.99
+
+[[products]]
+name = "Gadget"
+sku = "GGT-002"
+price = 29.99
+disabled = true
+
+# =============================================================================
+# SECTION 9: Schema Validation Tests (Schema Errors)
+# =============================================================================
+
+# Uncomment below lines to test schema validation errors:
+
+# invalid_property = "This will fail - additionalProperties: false"
+
+# [metadata]
+# extra_field = "This table allows additionalProperties, but check nested"
+
+# version = "not-a-semver"          # Pattern validation error
+
+# priority = "urgent"               # Enum validation error
+
+# =============================================================================
+# SECTION 10: Syntax Error Tests (TOML Validation)
+# =============================================================================
+
+# Uncomment to test TOML syntax error detection:
+
+# broken = unquoted string
+
+# [table
+# missing = "bracket"
+
+# key_without_value
+
+# duplicate = "first"
+# duplicate = "second"
+
+# =============================================================================
+# SECTION 11: Autocompletion Test Area
+# =============================================================================
+
+# Type below to test key autocompletion (Ctrl+Space):
+# In root context, should suggest: name, version, enabled, priority, count, metadata, server
+# In [metadata] context, should suggest: tags, created
+# In [server] context, should suggest: host, port, ssl
+# After '=' on enum/boolean fields, should suggest values
+
+# Test area:
+# [new_section]

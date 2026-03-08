@@ -1,0 +1,108 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "x-test-schema-version": "1.0.0",
+  "x-custom-extension": { "author": "test" },
+  "title": "Test TOML Schema",
+  "description": "Schema for testing TOML extension features",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Project name"
+    },
+    "version": {
+      "type": "string",
+      "description": "Semantic version",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "enabled": {
+      "type": "boolean",
+      "description": "Feature toggle"
+    },
+    "priority": {
+      "type": "string",
+      "enum": ["low", "medium", "high"],
+      "description": "Task priority level"
+    },
+    "count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "created": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["created"]
+    },
+    "server": {
+      "type": "object",
+      "properties": {
+        "host": { "type": "string" },
+        "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+        "ssl": { "type": "boolean" }
+      }
+    },
+    "basic_string": { "type": "string" },
+    "escaped_string": { "type": "string" },
+    "literal_string": { "type": "string" },
+    "multiline_basic": { "type": "string" },
+    "multiline_literal": { "type": "string" },
+    "integer": { "type": "integer" },
+    "hex": { "type": "integer" },
+    "octal": { "type": "integer" },
+    "binary": { "type": "integer" },
+    "float": { "type": "number" },
+    "infinite": { "type": "number" },
+    "not_a_number": { "type": "number" },
+    "offset_datetime": { "type": "string", "format": "date-time" },
+    "local_datetime": { "type": "string", "format": "date-time" },
+    "local_date": { "type": "string", "format": "date" },
+    "local_time": { "type": "string" },
+    "integers": {
+      "type": "array",
+      "items": { "type": "integer" }
+    },
+    "strings": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "nested": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "items": { "type": "integer" }
+      }
+    },
+    "mixed": { "type": "array" },
+    "point": {
+      "type": "object",
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "label": { "type": "string" }
+      }
+    },
+    "products": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "sku": { "type": "string" },
+          "price": { "type": "number" },
+          "disabled": { "type": "boolean" }
+        }
+      }
+    }
+  },
+  "required": ["name", "version"],
+  "additionalProperties": false
+}
