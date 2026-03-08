@@ -31,7 +31,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ### Fixed
 - Schema validation: Add `ajv-formats` to correctly handle standard JSON schema formats like "email".
 - Schema validation: Improved logging for schema loading and validation errors.
-- Schema validation: Set Ajv to `strict: true` for more robust schema compliance checks.
+- Schema validation: Set Ajv to `strict: "log"` so schemas with custom `x-*` extension keywords still compile.
 - Schema validation: Enhanced error message for missing required properties to be more specific.
 - Schema validation: Refined glob pattern matching for `toml.schema.associations`.
 - Schema validation: Resolved `TypeError: Do not know how to serialize a BigInt` by parsing TOML integers as standard numbers when preparing data for Ajv and `JSON.stringify` logging.
