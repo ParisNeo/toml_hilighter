@@ -97,6 +97,7 @@
         },
         "toml.schema.associations": {
           "type": "object",
+          "scope": "resource",
           "default": {},
           "description": "Associate TOML files matching glob patterns with JSON Schemas. The key is a glob pattern (e.g., '**/my-project/*.toml') and the value is the schema URI (local path or HTTPS URL). Example: { '**/mypackage.toml': './schemas/mypackage.schema.json' }",
           "additionalProperties": {
