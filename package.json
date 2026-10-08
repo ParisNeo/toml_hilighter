@@ -32,6 +32,7 @@
   ],
   "main": "./extension.js",
   "scripts": {
+    "test": "node test/run.js",
     "precompile": "node -e \"require('fs').mkdirSync('builds', {recursive:true})\"",
     "compile": "vsce package --out builds/toml-hilighter-%npm_package_version%.vsix",
     "prepackage": "node -e \"require('fs').mkdirSync('builds', {recursive:true})\"",
@@ -96,6 +97,7 @@
         },
         "toml.schema.associations": {
           "type": "object",
+          "scope": "resource",
           "default": {},
           "description": "Associate TOML files matching glob patterns with JSON Schemas. The key is a glob pattern (e.g., '**/my-project/*.toml') and the value is the schema URI (local path or HTTPS URL). Example: { '**/mypackage.toml': './schemas/mypackage.schema.json' }",
           "additionalProperties": {
@@ -125,5 +127,8 @@
     "@ltd/j-toml": "^1.38.0",
     "ajv": "^8.12.0",
     "ajv-formats": "^3.0.1"
+  },
+  "devDependencies": {
+    "@vscode/test-electron": "^3.1.0"
   }
 }

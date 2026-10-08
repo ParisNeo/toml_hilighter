@@ -183,20 +183,21 @@ async function getSchemaUriForDocument(document) { // Renamed from getSchemaForD
         }
     }
 
-    const associations = vscode.workspace.getConfiguration('toml').get('schema.associations');
+    const associations = vscode.workspace.getConfiguration('toml', document.uri).get('schema.associations');
     logToChannel(`Schema associations from settings: ${JSON.stringify(associations)}`);
     if (associations && typeof associations === 'object') {
         const docPath = document.uri.fsPath;
         for (const pattern in associations) {
             logToChannel(`Checking pattern "${pattern}" against "${docPath}"`);
-            let rePatternText = pattern
-                .replace(/[.+?^${}()|[\]\\]/g, '\\$&') 
-                .replace(/\*\*/g, '(.+[\\\\\\/])?')     
-                .replace(/\*/g, '[^\\\\\\/]*');       
-            
+            // VS Code globs use forward slashes, including on Windows.
+            // A filename-only pattern should match that name at any depth.
+            const normalizedPattern = pattern.replace(/\\/g, '/');
+            const globPattern = normalizedPattern.includes('/')
+                ? normalizedPattern
+                : `**/${normalizedPattern}`;
+
             try {
-                const regex = new RegExp(`^${rePatternText}$`);
-                if (regex.test(docPath)) {
+                if (vscode.languages.match({ pattern: globPattern }, document) > 0) {
                     const schemaUriFromConfig = associations[pattern];
                     logToChannel(`Schema association matched for ${docPath} via pattern "${pattern}": ${schemaUriFromConfig}`);
                     return schemaUriFromConfig;

@@ -81,6 +81,16 @@ You can associate a JSON schema with your TOML files in two ways:
     ```
     The key is a glob pattern that matches TOML file paths, and the value is the schema URI (local path relative to the workspace root, absolute path, or an HTTPS URL).
 
+    Patterns use VS Code's glob syntax (`*`, `**`, `?`, character classes, and brace alternatives). A filename-only pattern such as `pyproject.toml` matches at any directory depth, just like `**/pyproject.toml`. Use forward slashes for directory separators, including on Windows. Folder-specific associations use the document's workspace folder settings.
+
+    Schema URLs must return JSON rather than a GitHub file preview page. For `uv.toml`, use uv's settings schema:
+    ```json
+    "toml.schema.associations": {
+        "**/uv.toml": "https://raw.githubusercontent.com/astral-sh/uv/main/uv.schema.json"
+    }
+    ```
+    This schema describes top-level uv settings; `pyproject.toml` nests these settings under `[tool.uv]` and needs a schema for the whole pyproject document.
+
 ### Schema Validation & Autocompletion Notes
 
 *   Both schema validation and autocompletion require a successfully parsed TOML document (no syntax errors).
@@ -154,6 +164,8 @@ These dependencies are bundled with the extension.
 ## Contributing
 
 Contributions, issues, and feature requests are welcome! Please check the [repository issues](https://github.com/ParisNeo/toml_hilighter/issues) page.
+
+Run `npm ci` and `npm test` to run regression tests in an isolated VS Code extension host. The runner downloads VS Code Stable by default. Set `VSCODE_EXECUTABLE_PATH` to use an existing VS Code executable instead. Test settings, extensions, and workspace files are created in a temporary directory, separate from your normal VS Code profile.
 
 ## License
 
