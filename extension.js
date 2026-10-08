@@ -520,7 +520,9 @@ function activate(context) {
         context.subscriptions.push(outputChannel);
         logToChannel('TOML extension with schema validation & completion is now active!');
 
-        ajv = new Ajv({ allErrors: true, strict: "log" }); 
+        // Unknown format annotations must not prevent the whole schema from loading.
+        // Keep known formats enabled through ajv-formats below.
+        ajv = new Ajv({ allErrors: true, strict: "log", strictSchema: false });
         addFormats(ajv);
         logToChannel('Ajv initialized with formats.');
 
